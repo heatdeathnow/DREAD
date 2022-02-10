@@ -3,17 +3,15 @@ import tkinter as tk
 from tkinter import ttk
 import variables
 import scenes
-
+import patterns
+from math import floor
 
 class Battle:
 
     def __init__(self, enemies, agency):
 
-        # Styles for the background of active and inactive fighters
-        self.active_style = ttk.Style()
-        self.active_style.configure('gray.TFrame', background='gray')
-        self.inactive_style = ttk.Style()
-        self.inactive_style.configure('white.TFrame', background='white')
+        self.n_attacks = 1
+        self.n_attack = 1
 
         self.enemies = enemies
         self.agency = agency
@@ -29,6 +27,14 @@ class Battle:
         self.order += agency[:]
         self.order.sort(reverse=True, key=lambda entity: entity.speed)
         self.current = 0
+
+        # Matches order of enemies with order
+        self.enemies.clear()
+        for entity in self.order:
+            try:
+                entity.dread
+            except AttributeError:
+                self.enemies.append(entity)
 
         # This will be used to match the frames with the entities.
         self.frame_order = []
@@ -75,16 +81,15 @@ class Battle:
     # Gives different options to proceed depending if its a agent or not.
     def turn(self, who):
 
-        # Loops the fight back around
-        if self.current == len(self.order):
+        self.n_attack, self.n_attacks = 1, 1  # Resets multiple attacks
+
+        if self.current == len(self.order):  # Loops the fight back around
             self.current, who = 0, 0
 
-        # Toggles back everyone to inactive background
-        for one in self.frame_order:
-            one.configure(style='white.TFrame')
+        for one in self.frame_order:  # Toggles back everyone to inactive background
+            one.configure(style='default.TFrame')
 
-        # Recreates action_bar in case if the player returns to menu
-        try:
+        try:  # Recreates action_bar in case if the player returns to menu
             self.action_bar.destroy()
         except AttributeError:
             pass
@@ -93,85 +98,156 @@ class Battle:
         try:
             self.order[who].dread
         except AttributeError:
-            next_button = ttk.Button(self.action_bar, text='Próximo', command=self.enemy_decide)
+            next_button = ttk.Button(self.action_bar, text='Próximo', style='default.TButton',
+                                     command=self.enemy_decide)
             next_button.grid(row=0, padx=5)
         else:
-            attack_button = ttk.Button(self.action_bar, text='Atacar', command=self.agent_choose_move)
+            attack_button = ttk.Button(self.action_bar, text='Atacar', style='default.TButton',
+                                       command=self.agent_choose_move)
             attack_button.grid(column=0, row=0, padx=5)
 
-            item_button = ttk.Button(self.action_bar, text='Itens')
+            item_button = ttk.Button(self.action_bar, text='Itens', style='default.TButton',)
             item_button.grid(column=1, row=0, padx=5)
 
-            defend_button = ttk.Button(self.action_bar, text='Defender', command=self.enemy_decide)
+            defend_button = ttk.Button(self.action_bar, text='Defender', style='default.TButton',
+                                       command=self.enemy_decide)
             defend_button.grid(column=2, row=0, padx=5)
         self.desc_label['text'] = f'É o turno de {self.order[who].name}'
 
-        self.frame_order[who].configure(style='gray.TFrame')
+        self.frame_order[who].configure(style='selected.TFrame')
 
         self.action_bar.grid(row=3, pady=10)
 
-    def enemy_decide(self):  # Decides the move and the target
+    def enemy_decide(self, attack_again_flag=False):  # Decides the move and the target
+
+        self.action_bar.destroy()
+        self.action_bar = ttk.Frame(variables.root)
 
         num = len(self.order[self.current].skills)
         choose = random.randint(0, num - 1)
         self.selected_move = self.order[self.current].skills[choose]
 
-        num = len(self.agency)
-        choose = random.randint(0, num - 1)
-        self.target = self.agency[choose]
+        if not attack_again_flag:
+            num = len(self.agency)
+            choose = random.randint(0, num - 1)
+            self.target = self.agency[choose]
+            self.attack()
+        else:
+            self.n_attack += 1
 
-        self.attack()
+            self.desc_label['text'] = f"{self.selected_move.owner.name} é muito rápido! Ele ataca de novo!"
+            speed_button = ttk.Button(self.action_bar, text="Próximo", style='default.TButton',
+                                      command=self.attack)
+            speed_button.grid(padx=5)
+            self.action_bar.grid(row=3, pady=10)
 
     def attack(self):
+        print("Attacker order: ", self.current)
         self.action_bar.destroy()
-        style = ttk.Style()
-        style.configure('white.TFrame', background='white')
 
         damage, description = self.selected_move.damage(self.target)
         print("damage: ", damage, " done by ", self.selected_move.owner.name)
+
+        # Checks if it's a critical hit
+        if variables.skill == 1.5:
+            description += "\nÉ um ótimo ataque!"
+            self.selected_move.owner.dread -= random.randint(1, round(damage / 2))
 
         self.desc_label['text'] = description
         self.target.hp -= damage
         if self.target.hp < 0: self.target.hp = 0
 
-        # updates the health bar of the receiver
+        # updates the health bar of the receiver and possibly the DL bar of attacker
+        # and removes from frame_order and order in case of death
         count = 0
         for entity in self.order:
             if entity == self.target or entity == self.selected_move.owner:
                 self.frame_order[count].toggle()
+                if entity.hp == 0:
+                    self.frame_order.pop(count)
+                    self.order.pop(count)
+
+                    count1 = 0
+                    for enemy in self.enemies:
+                        if enemy == entity:
+                            self.enemies.pop(count1)
+                        count1 += 1
+
+                    count1 = 0
+                    for agent in self.agency:
+                        if agent == entity:
+                            self.agency.pop(count1)
+                        count1 += 1
             count += 1
 
-        self.current += 1
         self.action_bar = ttk.Frame(variables.root)
-        ok_button = ttk.Button(self.action_bar, text='Próximo', command=lambda: self.turn(self.current))
+
+        # Makes sure the critical hit check doesn't break (only players can change this value)
+        variables.skill = 0
+
+        # Checks if attacker's speed is higher than a multiple of any opponents', if so, allowing them to act again
+        if self.n_attacks == 1:
+            self.n_attacks = floor(self.selected_move.owner.speed / self.target.speed)
+            if self.n_attacks < 1: self.n_attacks = 1
+        try:
+            self.selected_move.owner.dread
+            if self.n_attack != self.n_attacks:
+                ok_button = ttk.Button(self.action_bar, text='Próximo', style='default.TButton',
+                                       command=lambda: self.agent_choose_move(True))
+            else:
+                self.current += 1
+                ok_button = ttk.Button(self.action_bar, text='Próximo', style='default.TButton',
+                                       command=lambda: self.turn(self.current))
+        except AttributeError:
+            if self.n_attack != self.n_attacks:
+                ok_button = ttk.Button(self.action_bar, text='Próximo', style='default.TButton',
+                                       command=lambda: self.enemy_decide(True))
+            else:
+                self.current += 1
+                ok_button = ttk.Button(self.action_bar, text='Próximo', style='default.TButton',
+                                       command=lambda: self.turn(self.current))
+
         ok_button.grid()
         self.action_bar.grid(row=3, pady=10)
 
-    def agent_choose_move(self):
+    def agent_choose_move(self, attack_again_flag=False):
         self.action_bar.destroy()
 
         self.action_bar = ttk.Frame(variables.root)
         count = 0
         buttons = []
         for move in self.order[self.current].skills:
-            buttons.append(ttk.Button(self.action_bar, text=move.name,
-                                      command=lambda a=move: self.agent_move_done(a)))
+            if attack_again_flag:
+                buttons.append(ttk.Button(self.action_bar, text=move.name, style='default.TButton',
+                                          command=lambda a=move: self.agent_move_done(a, True)))
+            else:
+                buttons.append(ttk.Button(self.action_bar, text=move.name, style='default.TButton',
+                                          command=lambda a=move: self.agent_move_done(a)))
             buttons[count].grid(row=0, column=count, padx=5, pady=5)
             count += 1
 
         while count < 4:
-            buttons.append(ttk.Button(self.action_bar, text="Vazio"))
+            buttons.append(ttk.Button(self.action_bar, text="Vazio", style='default.TButton'))
             buttons[count].grid(row=0, column=count, padx=5, pady=5)
             count += 1
-        buttons.append(ttk.Button(self.action_bar, text="Retornar",
-                                  command=lambda: self.turn(self.current)))
-        buttons[count].grid(row=0, column=count, padx=5, pady=5)
+
+        if not attack_again_flag:
+            buttons.append(ttk.Button(self.action_bar, text="Retornar", style='default.TButton',
+                                      command=lambda: self.turn(self.current)))
+            buttons[count].grid(row=0, column=count, padx=5, pady=5)
+        else:
+            self.desc_label['text'] = f"{self.selected_move.owner.name} é muito rápido! Ele ataca de novo!"
 
         self.action_bar.grid(row=3, pady=10)
 
-    def agent_move_done(self, move):
+    def agent_move_done(self, move, attack_again_flag=False):
         self.selected_move = move
-        self.agent_choose_target()
+
+        if not attack_again_flag:
+            self.agent_choose_target()
+        else:
+            self.n_attack += 1
+            self.skill_check()
 
     def agent_choose_target(self):
         self.action_bar.destroy()
@@ -180,13 +256,41 @@ class Battle:
         count = 0
         targets = []
         for target in self.enemies:
-            targets.append(ttk.Button(self.action_bar, text=target.name,
-                                      command=lambda: self.agent_target_done(target)))
+            targets.append(ttk.Button(self.action_bar, text=target.name, style='default.TButton',
+                                      command=lambda a=target: self.agent_target_done(a)))
             targets[count].grid(row=0, column=count, padx=5, pady=5)
             count += 1
+
+        targets.append(ttk.Button(self.action_bar, text="Voltar", style='default.TButton',
+                                  command=self.agent_choose_move))
+        targets[count].grid(row=0, column=count, padx=5, pady=5)
 
         self.action_bar.grid(row=3, pady=10)
 
     def agent_target_done(self, target):
         self.target = target
+        self.skill_check()
+
+    def skill_check(self):
+        self.enemies_frame.grid_forget()
+        self.agency_frame.grid_forget()
+        self.desc_label.grid_forget()
+        try:
+            self.action_bar.grid_forget()
+        except AttributeError:
+            pass
+
+        rand = random.random()
+
+        if 0 <= rand <= 0.33:
+            self.skill_object = patterns.MatchBar()
+        elif 0.33 < rand <= 0.66:
+            self.skill_object = patterns.QuickButtons()
+        else:
+            self.skill_object = patterns.Sequence()
+
+    def reload_window(self):
+        self.enemies_frame.grid(row=0, sticky=tk.N)
+        self.agency_frame.grid(row=2, sticky=tk.S)
+        self.desc_label.grid(row=1, pady=100)
         self.attack()

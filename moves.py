@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from random import randint
 import entities
+import variables
 
 
 class Move:
@@ -17,7 +18,7 @@ class Move:
 # Dano baseado na força do dono e na defesa do oponente.
 class Melee(Move):
     def __init__(self, owner):
-        super().__init__(True, owner, 'Socão', 0)
+        super().__init__(True, owner, 'Golpear', 0)
 
     def damage(self, opponent):
         random_part = round(randint(0, round(self.owner.attack / 4)))  # dano extra aleatório de 0 até 1/4 do ataque
@@ -44,7 +45,7 @@ class Melee(Move):
             except AttributeError:
                 battle_description = f'{self.owner.name} acerta {opponent.name}, mas não o fere'
         else:
-            battle_description = f'{self.owner.name} soca {opponent.name}!'
+            battle_description = f'{self.owner.name} golpeia {opponent.name}!'
 
         return damage, battle_description
 
@@ -69,9 +70,9 @@ class Tackle(Move):
             # Increases dread if it's a player being attacked based on how much stronger or faster the enemy is.
             try:
                 difference = self.owner.attack - opponent.attack
-                if (self.owner.speed - opponent.speed) > difference:
+                if (self.owner.speed - opponent.speed) >= difference:
                     difference = self.owner.speed - opponent.speed
-                elif difference <= 0: difference = 1
+                if difference <= 0: difference = 1
 
                 opponent.dread += randint(1, difference)
             except AttributeError:
@@ -95,6 +96,6 @@ def apply_multiplier(self, opponent, damage):
     try:  # if it's an enemy attacking
         multiplier = (opponent.dread + 100) / 100
     except AttributeError:  # if it's the player attacking
-        multiplier = (100 - self.owner.dread) / 100
+        multiplier = ((100 - self.owner.dread) / 100) * variables.skill
 
     return round(damage * multiplier)

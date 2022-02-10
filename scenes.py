@@ -13,7 +13,7 @@ class CombatInfo(ttk.Frame):
         name_label = ttk.Label(self, text=entity.name)
         name_label.grid(row=0, column=1, padx=5, pady=5)
 
-        hp_label = ttk.Label(self, text='HP: ')
+        hp_label = ttk.Label(self, text='PV: ')
         hp_label.grid(row=1, column=0, padx=5, pady=5)
         self.hp_bar = ttk.Progressbar(self, value=(entity.hp / entity.max_hp * 100))
         self.hp_bar.grid(row=1, column=1, padx=5, pady=5)
@@ -28,7 +28,7 @@ class CombatInfo(ttk.Frame):
             self.deli_bar = ttk.Progressbar(self, value=(entity.delirium / entity.max_delirium * 100))
             self.deli_bar.grid(row=2, column=1, padx=5, pady=5)
 
-            dread_label = ttk.Label(self, text='DREAD: ')
+            dread_label = ttk.Label(self, text='TORPOR: ')
             dread_label.grid(row=3, column=0, padx=5, pady=5)
             self.dread_bar = ttk.Progressbar(self, value=entity.dread)
             self.dread_bar.grid(row=3, column=1, padx=5, pady=5)

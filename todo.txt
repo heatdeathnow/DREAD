@@ -1,2 +1,6 @@
-enemies die
-attack patterns
+add item
+death
+make the game better at killing
+    game always attacks closest to dying
+    game prioritizes attacking players with half its speed
+    game never uses attacks that cost DL if it doesn't have it
