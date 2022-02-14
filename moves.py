@@ -94,8 +94,8 @@ class Tackle(Move):
 
 def apply_multiplier(self, opponent, damage):
     try:  # if it's an enemy attacking
-        multiplier = (opponent.dread + 100) / 100
+        multiplier = ((2 + opponent.dread / 100) / 2)
     except AttributeError:  # if it's the player attacking
-        multiplier = ((100 - self.owner.dread) / 100) * variables.skill
+        multiplier = ((2 - self.owner.dread / 100) / 2) * variables.skill
 
     return round(damage * multiplier)

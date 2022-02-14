@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
+from random import randint
+import clutches
 import entities
 import variables
 
@@ -43,3 +45,38 @@ class CombatInfo(ttk.Frame):
         else:
             self.deli_bar.configure(value=(self.entity.delirium / self.entity.max_delirium * 100))
             self.dread_bar.configure(value=self.entity.dread)
+
+
+def survival():
+
+    variables.player.hp = variables.player.max_hp
+    variables.player.delirium = variables.player.max_delirium
+
+    iteration = int(variables.enemy.name[10:])
+    variables.enemy.name = "Iteration " + str(iteration + 1)
+
+    rand = randint(0, 4)
+    if rand == 0:
+        variables.enemy.max_hp += 5
+    elif rand == 1:
+        variables.enemy.max_delirium += 5
+    elif rand == 2:
+        variables.enemy.attack += 1
+    elif rand == 3:
+        variables.enemy.defense += 1
+    elif rand == 4:
+        variables.enemy.speed += 1
+
+    variables.enemy.hp = variables.enemy.max_hp
+    variables.enemy.delirium = variables.enemy.max_delirium
+
+    print(f'{variables.enemy.name}'
+          f'\nHP: {variables.enemy.max_hp}, DL: {variables.enemy.max_delirium}'
+          f'\nAT: {variables.enemy.attack}, DE: {variables.enemy.defense}, SP: {variables.enemy.speed}')
+
+    label = ttk.Label(variables.root, text="Você derrotou o inimigo, mas outro aparece!")
+    label.grid(row=0, padx=5, pady=5)
+
+    button = ttk.Button(variables.root, text="Próximo", style='default.TButton',
+                        command=lambda: clutches.combat_clutch([variables.enemy], [variables.player]))
+    button.grid(row=1, padx=5, pady=50)

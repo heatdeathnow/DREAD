@@ -1,10 +1,13 @@
 import random
 import tkinter as tk
 from tkinter import ttk
+
+import clutches
 import variables
 import scenes
 import patterns
-from math import floor
+from math import floor, ceil
+
 
 class Battle:
 
@@ -12,6 +15,7 @@ class Battle:
 
         self.n_attacks = 1
         self.n_attack = 1
+        self.end_state = 0
 
         self.enemies = enemies
         self.agency = agency
@@ -95,24 +99,42 @@ class Battle:
             pass
 
         self.action_bar = ttk.Frame(variables.root)
-        try:
-            self.order[who].dread
-        except AttributeError:
+
+        # Checks if the battle is over
+        if not self.agency:  # Checks if all playable characters are dead
+            self.end_state = -1
+        elif not self.enemies:
+            self.end_state = 1
+
+        if self.end_state == 0:
+            try:
+                self.order[who].dread
+            except AttributeError:
+                next_button = ttk.Button(self.action_bar, text='Próximo', style='default.TButton',
+                                         command=self.enemy_decide)
+                next_button.grid(row=0, padx=5)
+            else:
+                attack_button = ttk.Button(self.action_bar, text='Atacar', style='default.TButton',
+                                           command=self.agent_choose_move)
+                attack_button.grid(column=0, row=0, padx=5)
+
+                item_button = ttk.Button(self.action_bar, text='Itens', style='default.TButton',)
+                item_button.grid(column=1, row=0, padx=5)
+
+                defend_button = ttk.Button(self.action_bar, text='Defender', style='default.TButton',
+                                           command=self.enemy_decide)
+                defend_button.grid(column=2, row=0, padx=5)
+            self.desc_label['text'] = f'É o turno de {self.order[who].name}'
+        elif self.end_state == -1:
             next_button = ttk.Button(self.action_bar, text='Próximo', style='default.TButton',
-                                     command=self.enemy_decide)
+                                     command=clutches.shutdown)
             next_button.grid(row=0, padx=5)
-        else:
-            attack_button = ttk.Button(self.action_bar, text='Atacar', style='default.TButton',
-                                       command=self.agent_choose_move)
-            attack_button.grid(column=0, row=0, padx=5)
-
-            item_button = ttk.Button(self.action_bar, text='Itens', style='default.TButton',)
-            item_button.grid(column=1, row=0, padx=5)
-
-            defend_button = ttk.Button(self.action_bar, text='Defender', style='default.TButton',
-                                       command=self.enemy_decide)
-            defend_button.grid(column=2, row=0, padx=5)
-        self.desc_label['text'] = f'É o turno de {self.order[who].name}'
+            self.desc_label['text'] = f'Batalha perdida!'
+        elif self.end_state == 1:
+            next_button = ttk.Button(self.action_bar, text='Próximo', style='default.TButton',
+                                     command=lambda: clutches.scene_clutch(scenes.survival))
+            next_button.grid(row=0, padx=5)
+            self.desc_label['text'] = f'Batalha vencida!'
 
         self.frame_order[who].configure(style='selected.TFrame')
 
@@ -150,8 +172,16 @@ class Battle:
 
         # Checks if it's a critical hit
         if variables.skill == 1.5:
-            description += "\nÉ um ótimo ataque!"
-            self.selected_move.owner.dread -= random.randint(1, round(damage / 2))
+            if damage == 0:
+                description = f"É um ótimo ataque!" \
+                              f"\nPorém não é o suficiente para ferir {self.target.name}"
+                difference = self.target.defense * 2 - self.selected_move.owner.attack
+                if difference <= 0: difference = 1
+                self.selected_move.owner.dread -= random.randint(1, difference)
+            else:
+                description += "\nÉ um ótimo ataque!"
+                self.selected_move.owner.dread -= random.randint(1, ceil(damage / 2))
+                if self.selected_move.owner.dread < 0: self.selected_move.owner.dread = 0
 
         self.desc_label['text'] = description
         self.target.hp -= damage
@@ -178,6 +208,10 @@ class Battle:
                         if agent == entity:
                             self.agency.pop(count1)
                         count1 += 1
+
+                    # Corrects the order of turns because of the new missing enemy
+                    self.current -= 1
+                    if self.current < 0: self.current = len(self.order) - 1
             count += 1
 
         self.action_bar = ttk.Frame(variables.root)
@@ -211,6 +245,8 @@ class Battle:
         self.action_bar.grid(row=3, pady=10)
 
     def agent_choose_move(self, attack_again_flag=False):
+        print('DREAD: ', self.order[self.current].dread)
+
         self.action_bar.destroy()
 
         self.action_bar = ttk.Frame(variables.root)

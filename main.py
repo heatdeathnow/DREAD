@@ -1,11 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
-import entities
-import moves
-import scenes
 import variables
-import patterns
 import combat
+from random import randint
 
 # Configures colors and such
 style = ttk.Style(variables.root)
@@ -16,21 +13,5 @@ style.configure('patterns.TButton', background='white', foreground='black', font
 style.map('TButton', background=[('active', 'red')])
 style.configure('selected.TFrame', background='purple', foreground='white')
 
-player = entities.Player("Resistência", 50, 20, 3, 1, 4, 0)
-player.skills.append(moves.Melee(player))
-player.skills.append(moves.Tackle(player))
-
-enemy = entities.Entity("Velocidade", 15, 0, 2, 1, 12)
-enemy.skills.append(moves.Melee(enemy))
-
-enemy1 = entities.Entity("Ataque", 15, 20, 5, 1, 3)
-enemy1.skills.append(moves.Melee(enemy1))
-enemy1.skills.append(moves.Tackle(enemy1))
-
-enemy2 = entities.Entity("Defesa", 15, 20, 2, 3, 2)
-enemy2.skills.append(moves.Melee(enemy2))
-enemy2.skills.append(moves.Tackle(enemy2))
-
-variables.combat = combat.Battle([enemy, enemy1, enemy2], [player])
-
+variables.fight = combat.Battle([variables.enemy], [variables.player])
 variables.root.mainloop()

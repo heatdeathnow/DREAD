@@ -7,6 +7,8 @@ import variables
 class MatchBar:
     def __init__(self):
         self.end_flag = False
+        self.amount = randint(1, 3)
+        self.done = 0
 
         self.bar_frame = ttk.Frame(variables.root)
 
@@ -61,7 +63,7 @@ class MatchBar:
         self.bar_frame.destroy()
         self.invisible_label.destroy()
         self.button.destroy()
-        variables.combat.reload_window()
+        variables.fight.reload_window()
 
 
 class QuickButtons:
@@ -101,7 +103,7 @@ class QuickButtons:
         try:
             self.quick_button.destroy()
             self.timer_label.destroy()
-        except AttributeError:
+        except (AttributeError, tk.TclError):
             pass
         self.spawn()
 
@@ -124,7 +126,7 @@ class QuickButtons:
         print('clicked: ', self.clicked, ", total: ", self.amount,
               '\nskill: ', variables.skill)
 
-        variables.combat.reload_window()
+        variables.fight.reload_window()
 
 
 class Sequence:
@@ -202,4 +204,4 @@ class Sequence:
         print('clicked: ', self.clicked, ", total: ", self.amount,
               '\nskill: ', variables.skill)
 
-        variables.combat.reload_window()
+        variables.fight.reload_window()

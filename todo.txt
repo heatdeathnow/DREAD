@@ -1,5 +1,6 @@
 add item
-death
+add groundwork to start working in scenes and transitions
+fix spaghetti code (i don't think these many things need to be objects.)
 make the game better at killing
     game always attacks closest to dying
     game prioritizes attacking players with half its speed
